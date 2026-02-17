@@ -1,32 +1,30 @@
-{ ... }:
-
+{...}:
 # ── Editor behaviour ─────────────────────────────────────────────────────────
 # Confirmed options from https://nvf.notashelf.dev/options.html
 # Only options explicitly listed in the options reference are used.
 {
   programs.nvf.settings.vim = {
-
     # ── Core options ───────────────────────────────────────────────────────
     # vim.options.* — only confirmed sub-keys from the options page:
     #   tabstop, shiftwidth, signcolumn, splitbelow, splitright,
     #   termguicolors, wrap, autoindent, cmdheight, mouse, updatetime
     options = {
-      tabstop      = 2;
-      shiftwidth   = 2;
-      signcolumn   = "yes";
-      splitbelow   = true;
-      splitright   = true;
+      tabstop = 2;
+      shiftwidth = 2;
+      signcolumn = "yes";
+      splitbelow = true;
+      splitright = true;
       termguicolors = true;
-      wrap         = false;
-      autoindent   = true;
-      cmdheight    = 1;
-      updatetime   = 300;
+      wrap = false;
+      autoindent = true;
+      cmdheight = 1;
+      updatetime = 300;
     };
 
     # ── Globals ────────────────────────────────────────────────────────────
     # vim.globals.mapleader, vim.globals.maplocalleader confirmed
     globals = {
-      mapleader      = " ";
+      mapleader = " ";
       maplocalleader = " ";
     };
 
@@ -37,7 +35,7 @@
     # ── Search ─────────────────────────────────────────────────────────────
     # vim.hideSearchHighlight, vim.searchCase confirmed
     hideSearchHighlight = false;
-    searchCase          = "smart";
+    searchCase = "smart";
 
     # ── Prevent swap/backup junk files ────────────────────────────────────
     # vim.preventJunkFiles confirmed
@@ -50,12 +48,12 @@
     # ── Syntax / Lua loader ────────────────────────────────────────────────
     # vim.syntaxHighlighting, vim.enableLuaLoader confirmed
     syntaxHighlighting = true;
-    enableLuaLoader    = true;
+    enableLuaLoader = true;
 
     # ── Clipboard ──────────────────────────────────────────────────────────
     # vim.clipboard.enable + vim.clipboard.registers confirmed
     clipboard = {
-      enable    = true;
+      enable = true;
       registers = "unnamedplus";
     };
 
@@ -82,5 +80,10 @@
     # ── Spellcheck (off by default, easy to flip on) ───────────────────────
     # vim.spellcheck.enable confirmed
     spellcheck.enable = false;
+    # -- Lazygit ------------------------------------------------------------
+    terminal.toggleterm = {
+      enable = true;
+      lazygit.enable = true;
+    };
   };
 }
