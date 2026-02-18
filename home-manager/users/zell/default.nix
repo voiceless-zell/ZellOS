@@ -43,9 +43,9 @@
   # ── Git ────────────────────────────────────────────────────────────────────
   programs.git = {
     enable = true;
-    userName = "Zell";
-    userEmail = "peter.bouchard2893@proton.me"; # ← update this
-    extraConfig = {
+    settings = {
+      user.name  = "Zell";
+      user.email = "peter.bouchard2893@proton.me";
       init.defaultBranch = "main";
       pull.rebase = true;
     };

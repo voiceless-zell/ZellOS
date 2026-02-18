@@ -3,6 +3,10 @@
   config,
   ...
 }: {
+  imports = [
+    ./avante.nix
+  ];
+
   programs.nvf = {
     enable = true;
 
