@@ -62,7 +62,8 @@ sops secrets/shared.yaml
 ## Adding to a New Machine
 
 The install script handles everything end-to-end: partitioning, formatting,
-hardware detection, host config generation, flake registration, and installation.
+hardware detection, host config generation, flake registration, and
+installation.
 
 ### Prerequisites
 
@@ -72,20 +73,24 @@ hardware detection, host config generation, flake registration, and installation
 
 ### Step 1 — Run the installer
 
-From the live ISO as root:
+From the live ISO terminal, paste this single command as root:
 
 ```bash
-git clone <your-repo-url> ZellOS
-cd ZellOS
-bash scripts/install.sh
+nix-shell -p curl git --run "bash <(curl -L https://raw.githubusercontent.com/voiceless-zell/ZellOS/main/scripts/install.sh)"
 ```
+
+This pulls and runs the script directly — no manual cloning needed. The script
+clones the repo to `/tmp/ZellOS` automatically (or pulls if it already exists).
 
 The script will ask you for:
 
-- **Username** — enter `zell` to use the existing profile, or a new name to create a fresh minimal profile
+- **Username** — enter `zell` to use the existing profile, or a new name to
+  create a fresh minimal profile
 - **Hostname** — the machine's hostname (e.g. `desktop`, `laptop`)
 - **Machine type** — VM, AMD bare metal, or Intel bare metal
-- **Form factor** — desktop or laptop (laptop enables wifi via NetworkManager + iwd backend, power management via TLP, and includes `nmtui` for connecting to wifi on first boot)
+- **Form factor** — desktop or laptop (laptop enables wifi via NetworkManager +
+  iwd backend, power management via TLP, and includes `nmtui` for connecting to
+  wifi on first boot)
 - **GPU** — none/VM, AMD (amdgpu), Intel integrated, or NVIDIA (proprietary)
 - **Target disk** — e.g. `/dev/sda` or `/dev/nvme0n1`
 - **Swap size** — in GB (default: 8)
@@ -138,8 +143,8 @@ In `.sops.yaml`, add the new host key under `keys` and include it in the
 ```yaml
 keys:
   - &user_zell age1...
-  - &host_wsl  age1...
-  - &host_<hostname> age1...   # ← add this
+  - &host_wsl age1...
+  - &host_<hostname> age1... # ← add this
 
 creation_rules:
   - path_regex: secrets/shared\.yaml$
@@ -147,7 +152,7 @@ creation_rules:
       - age:
           - *user_zell
           - *host_wsl
-          - *host_<hostname>   # ← and this
+          - *host_<hostname> # ← and this
 ```
 
 Then re-encrypt the secrets file so the new host can decrypt it:

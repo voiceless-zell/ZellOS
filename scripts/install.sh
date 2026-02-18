@@ -27,9 +27,20 @@ ask()     { echo -e "${BOLD}${YELLOW}  ?   ${NC}$*"; }
 # ── Root check ────────────────────────────────────────────────────────────────
 [[ $EUID -ne 0 ]] && error "This script must be run as root."
 
-# ── Locate flake root ─────────────────────────────────────────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FLAKE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# ── Clone or locate repo ──────────────────────────────────────────────────────
+REPO_URL="https://github.com/<your-username>/ZellOS"
+REPO_DIR="/tmp/ZellOS"
+
+if [[ -d "$REPO_DIR/.git" ]]; then
+  info "Repo found at $REPO_DIR — pulling latest..."
+  git -C "$REPO_DIR" pull
+else
+  info "Cloning ZellOS to $REPO_DIR..."
+  git clone "$REPO_URL" "$REPO_DIR"
+fi
+
+SCRIPT_DIR="$REPO_DIR/scripts"
+FLAKE_ROOT="$REPO_DIR"
 
 # =============================================================================
 # STEP 1 — Gather information
