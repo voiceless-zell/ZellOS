@@ -28,7 +28,7 @@ ask()     { echo -e "${BOLD}${YELLOW}  ?   ${NC}$*"; }
 [[ $EUID -ne 0 ]] && error "This script must be run as root."
 
 # ── Clone or locate repo ──────────────────────────────────────────────────────
-REPO_URL="https://github.com/voiceless-zell/ZellOS"
+REPO_URL="https://github.com/<your-username>/ZellOS"
 REPO_DIR="/tmp/ZellOS"
 
 if [[ -d "$REPO_DIR/.git" ]]; then
@@ -321,27 +321,98 @@ else
   VM_CONFIG="  # Bare metal — no VM guest config needed."
 fi
 
-# ── Write default.nix from template ──────────────────────────────────────────
-sed \
-  -e "s|__USERNAME__|$USERNAME|g" \
-  -e "s|__EXTRA_GROUPS__|$EXTRA_GROUPS|g" \
-  -e "s|# __CPU_MICROCODE__|  $CPU_MICROCODE|g" \
-  -e "s|  # __GPU_CONFIG__|$GPU_CONFIG|g" \
-  -e "s|  # __NETWORKMANAGER__|$NM_CONFIG|g" \
-  -e "s|  # __WIFI_CONFIG__|$WIFI_CONFIG|g" \
-  -e "s|    # __EXTRA_PACKAGES__|    $EXTRA_PACKAGES|g" \
-  "$FLAKE_ROOT/nixos/hosts/template/default.nix" \
-  > "$HOST_DIR/default.nix"
+# ── Write default.nix directly ───────────────────────────────────────────────
+cat > "$HOST_DIR/default.nix" <<NIXEOF
+{ inputs, hostname, pkgs, lib, config, ... }:
 
-# ── Write hardware.nix — use nixos-generate-config output directly ────────────
-# Copy the generated file and append our label-based filesystem config
+{
+  imports = [
+    ./hardware.nix
+  ];
+
+  # ── Boot ───────────────────────────────────────────────────────────────────
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # ── CPU microcode ──────────────────────────────────────────────────────────
+  $CPU_MICROCODE
+
+  # ── GPU ────────────────────────────────────────────────────────────────────
+$GPU_CONFIG
+
+  # ── Networking ─────────────────────────────────────────────────────────────
+  networking.hostName = hostname;
+$NM_CONFIG
+
+$WIFI_CONFIG
+
+  # ── SSH ────────────────────────────────────────────────────────────────────
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+    };
+  };
+
+  # ── Locale & time ──────────────────────────────────────────────────────────
+  time.timeZone = "America/New_York";
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  # ── System ─────────────────────────────────────────────────────────────────
+  system.stateVersion = "25.05";
+
+  # ── Nix settings ───────────────────────────────────────────────────────────
+  nix = {
+    settings = {
+      experimental-features = [ "nix-command" "flakes" ];
+      auto-optimise-store = true;
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
+  };
+
+  # ── Users ──────────────────────────────────────────────────────────────────
+  users.users.$USERNAME = {
+    isNormalUser = true;
+    description = "$USERNAME";
+    extraGroups = [ "wheel" "networkmanager" $( [[ -n "$EXTRA_GROUPS" ]] && echo "\"$EXTRA_GROUPS\"" ) ];
+    shell = pkgs.bash;
+  };
+
+  security.sudo.extraRules = [
+    {
+      users = [ "$USERNAME" ];
+      commands = [
+        { command = "ALL"; options = [ "NOPASSWD" ]; }
+      ];
+    }
+  ];
+
+  # ── Home Manager ───────────────────────────────────────────────────────────
+  home-manager.users.$USERNAME = import ../../../home-manager/users/$USERNAME;
+
+  # ── Global packages ────────────────────────────────────────────────────────
+  environment.systemPackages = with pkgs; [
+    git
+    curl
+    wget
+    vim
+    $( [[ -n "$EXTRA_PACKAGES" ]] && echo "$EXTRA_PACKAGES" )
+  ];
+}
+NIXEOF
+
+# ── Write hardware.nix from nixos-generate-config output ─────────────────────
 cp "$GENERATED_HW" "$HOST_DIR/hardware.nix"
 
-# Patch in KVM module and VM config
-sed -i \
-  -e "s|__CPU_KMOD__|$CPU_KMOD|g" \
-  -e "s|  # __VM_CONFIG__|$VM_CONFIG|g" \
-  "$FLAKE_ROOT/nixos/hosts/template/hardware.nix"
+# Patch in KVM module and VM config using awk (safe for multi-line)
+awk -v kmod="$CPU_KMOD" '{ gsub(/__CPU_KMOD__/, kmod); print }' \
+  "$HOST_DIR/hardware.nix" > "$HOST_DIR/hardware.nix.tmp" \
+  && mv "$HOST_DIR/hardware.nix.tmp" "$HOST_DIR/hardware.nix"
 
 success "Host config created at nixos/hosts/$HOSTNAME/"
 
