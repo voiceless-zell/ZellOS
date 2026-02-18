@@ -5,26 +5,16 @@
     ./hardware.nix
   ];
 
-  # ── Boot ───────────────────────────────────────────────────────────────────
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  # ── CPU microcode ──────────────────────────────────────────────────────────
-  # __CPU_MICROCODE__
-
-  # ── GPU ────────────────────────────────────────────────────────────────────
-  # __GPU_CONFIG__
-
-  # ── Networking ─────────────────────────────────────────────────────────────
-  networking.hostName = hostname;
-
-  # Desktop: NetworkManager enabled here.
-  # Laptop: NetworkManager + iwd backend configured via __WIFI_CONFIG__ below.
-  # __NETWORKMANAGER__
-
-  # __WIFI_CONFIG__
+  # ── WSL ────────────────────────────────────────────────────────────────────
+  wsl = {
+    enable = true;
+    defaultUser = "zell";
+  };
 
   # ── SSH ────────────────────────────────────────────────────────────────────
+  # Enabled primarily to generate and persist /etc/ssh/ssh_host_ed25519_key,
+  # which sops-nix derives the host age key from. Password auth is off;
+  # root login is off. WSL does not expose this port to the network by default.
   services.openssh = {
     enable = true;
     settings = {
@@ -33,11 +23,9 @@
     };
   };
 
-  # ── Locale & time ──────────────────────────────────────────────────────────
-  time.timeZone = "America/New_York";
-  i18n.defaultLocale = "en_US.UTF-8";
-
   # ── System ─────────────────────────────────────────────────────────────────
+  networking.hostName = hostname; # "wsl"
+
   system.stateVersion = "25.05";
 
   # ── Nix settings ───────────────────────────────────────────────────────────
@@ -54,16 +42,17 @@
   };
 
   # ── Users ──────────────────────────────────────────────────────────────────
-  users.users.__USERNAME__ = {
+  users.users.zell = {
     isNormalUser = true;
-    description = "__USERNAME__";
-    extraGroups = [ "wheel" "networkmanager" "__EXTRA_GROUPS__" ];
-    shell = pkgs.bash;
+    description = "Zell";
+    extraGroups = [ "wheel" ];
+    shell = pkgs.bash; # change to pkgs.zsh, pkgs.fish, etc. as desired
   };
 
+  # Allow zell to use sudo without password (common WSL convenience)
   security.sudo.extraRules = [
     {
-      users = [ "__USERNAME__" ];
+      users = [ "zell" ];
       commands = [
         { command = "ALL"; options = [ "NOPASSWD" ]; }
       ];
@@ -71,7 +60,7 @@
   ];
 
   # ── Home Manager ───────────────────────────────────────────────────────────
-  home-manager.users.__USERNAME__ = import ../../../home-manager/users/__USERNAME__;
+  home-manager.users.zell = import ../../../home-manager/users/zell;
 
   # ── Global packages ────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
@@ -79,6 +68,5 @@
     curl
     wget
     vim
-    # __EXTRA_PACKAGES__
   ];
 }

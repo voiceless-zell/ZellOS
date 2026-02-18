@@ -1,0 +1,44 @@
+# ── .sops.yaml — sops key policy ─────────────────────────────────────────────
+#
+# HOW TO ADD YOUR KEYS
+# ─────────────────────
+# 1. Your personal age key (used when editing secrets from your machine):
+#    Derive from your user SSH key (the one you already have, e.g. ~/.ssh/id_ed25519):
+#
+#      nix-shell -p ssh-to-age --run \
+#        "ssh-to-age < ~/.ssh/id_ed25519.pub"
+#
+#    Paste the output below as &user_zell.
+#
+# 2. Each host's age key (used by the machine to decrypt at boot/activation):
+#    Derive from the SSH host key ON the deployed machine:
+#
+#      nix-shell -p ssh-to-age --run \
+#        "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
+#
+#    Paste the output below as &host_<name> and add it to the relevant
+#    creation_rules group.
+#
+# 3. After adding a new key, re-encrypt the secrets file:
+#
+#      sops updatekeys secrets/shared.yaml
+#
+# ── Keys ──────────────────────────────────────────────────────────────────────
+keys:
+  # Your personal age key — run the ssh-to-age command above to get this value
+  - &user_zell age1c8g72j8s32nxm9vp3k03yfc4rcxk4qnhyruwsj4vss8cn3myva6qpqttn9
+
+  # Host keys — one per machine, derived from /etc/ssh/ssh_host_ed25519_key.pub
+  - &host_wsl  age1evzsu6vr39zks6g9jxswps44w9gd2zwrsxtqq42zsfntj0d3mgqsmqhwh4
+
+# ── Creation rules ────────────────────────────────────────────────────────────
+# secrets/shared.yaml is accessible to all current hosts + your personal key.
+# Add new host keys to this group when you add a new host to the flake.
+creation_rules:
+  - path_regex: secrets/shared\.yaml$
+    key_groups:
+      - age:
+          - *user_zell
+          - *host_wsl
+          # - *host_newmachine  ← add future hosts here, then run:
+          #   sops updatekeys secrets/shared.yaml
