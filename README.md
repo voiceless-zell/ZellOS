@@ -8,14 +8,19 @@ Multi-host NixOS configuration with WSL and Home Manager support.
 .
 ├── flake.nix                        # Inputs, outputs, host registration
 ├── .sops.yaml                       # sops key policy (age keys + creation rules)
+├── scripts/
+│   └── install.sh                   # Interactive installer for new machines
 ├── secrets/
 │   ├── README.md                    # How to create/edit secrets
 │   └── shared.yaml                  # Encrypted secrets (safe to commit)
 ├── nixos/
 │   ├── hosts/
-│   │   └── wsl/
-│   │       ├── default.nix          # WSL NixOS config (hostname: "wsl")
-│   │       └── hardware.nix         # WSL boot/hardware stubs
+│   │   ├── wsl/
+│   │   │   ├── default.nix          # WSL NixOS config (hostname: "wsl")
+│   │   │   └── hardware.nix         # WSL boot/hardware stubs
+│   │   └── template/
+│   │       ├── default.nix          # Template for new hosts (filled by install.sh)
+│   │       └── hardware.nix         # Hardware template with disk labels
 │   └── modules/
 │       ├── default.nix              # Shared NixOS modules
 │       ├── sops.nix                 # System-level secret decryption
@@ -45,27 +50,115 @@ sudo mkdir -p /etc/sops/age
 nix-shell -p ssh-to-age --run \
   "ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \
   | sudo tee /etc/sops/age/keys.txt > /dev/null"
-sudo chmod 600 /etc/sops/age/keys.txt
+sudo chmod 644 /etc/sops/age/keys.txt
 # Get the public key for .sops.yaml:
 nix-shell -p ssh-to-age --run "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
-# → paste into .sops.yaml as &host_wsl (or &host_<name>)
+# → paste into .sops.yaml as &host_wsl (or &host_<n>)
 
 # 3. Create the encrypted secrets file (once .sops.yaml has your personal key)
 sops secrets/shared.yaml
 ```
 
-## Adding a new host
+## Adding to a New Machine
 
-1. Create `nixos/hosts/<hostname>/default.nix` (and optionally `hardware.nix`).
-2. Register it in `flake.nix`:
-   ```nix
-   mynewhost = mkHost "mynewhost" "x86_64-linux" [];
-   ```
-3. Add the new host's age public key to `.sops.yaml` and re-encrypt:
-   ```bash
-   sops updatekeys secrets/shared.yaml
-   ```
-4. The machine's hostname must match (set via `networking.hostName`).
+The install script handles everything end-to-end: partitioning, formatting,
+hardware detection, host config generation, flake registration, and installation.
+
+### Prerequisites
+
+- Boot the target machine from a NixOS live ISO
+- Have this repo cloned or available on the live ISO (USB or network)
+- Know which disk to install to (`lsblk` to check)
+
+### Step 1 — Run the installer
+
+From the live ISO as root:
+
+```bash
+git clone <your-repo-url> ZellOS
+cd ZellOS
+bash scripts/install.sh
+```
+
+The script will ask you for:
+
+- **Username** — enter `zell` to use the existing profile, or a new name to create a fresh minimal profile
+- **Hostname** — the machine's hostname (e.g. `desktop`, `laptop`)
+- **Machine type** — VM, AMD bare metal, or Intel bare metal
+- **Form factor** — desktop or laptop (laptop enables wifi via iwd and power management via TLP)
+- **GPU** — none/VM, AMD (amdgpu), Intel integrated, or NVIDIA (proprietary)
+- **Target disk** — e.g. `/dev/sda` or `/dev/nvme0n1`
+- **Swap size** — in GB (default: 8)
+
+The script then:
+
+1. Partitions the disk (512MB EFI + swap + root, all labelled)
+2. Formats and mounts the filesystems
+3. Runs `nixos-generate-config` for real hardware detection
+4. Creates `nixos/hosts/<hostname>/` from the templates
+5. Creates a home-manager profile if the user is not `zell`
+6. Registers the new host in `flake.nix`
+7. Copies the flake to `/mnt/etc/nixos/` and runs `nixos-install`
+
+### Step 2 — First boot: generate the host age key
+
+After rebooting into the new system, set up the sops decryption key:
+
+```bash
+sudo mkdir -p /etc/sops/age
+nix-shell -p ssh-to-age --run \
+  "ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \
+  | sudo tee /etc/sops/age/keys.txt > /dev/null"
+sudo chmod 644 /etc/sops/age/keys.txt
+```
+
+Get the host's public age key to add to `.sops.yaml`:
+
+```bash
+nix-shell -p ssh-to-age --run \
+  "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
+```
+
+### Step 3 — Add the host key to .sops.yaml (from your dev machine)
+
+In `.sops.yaml`, add the new host key under `keys` and include it in the
+`creation_rules` group:
+
+```yaml
+keys:
+  - &user_zell age1...
+  - &host_wsl  age1...
+  - &host_<hostname> age1...   # ← add this
+
+creation_rules:
+  - path_regex: secrets/shared\.yaml$
+    key_groups:
+      - age:
+          - *user_zell
+          - *host_wsl
+          - *host_<hostname>   # ← and this
+```
+
+Then re-encrypt the secrets file so the new host can decrypt it:
+
+```bash
+sops updatekeys secrets/shared.yaml
+git add .sops.yaml secrets/shared.yaml
+git commit -m "feat: add host <hostname>"
+```
+
+### Step 4 — Rebuild on the new machine
+
+Pull the updated flake and rebuild:
+
+```bash
+cd /etc/nixos
+git pull
+sudo nixos-rebuild switch --flake .#<hostname>
+```
+
+Your secrets will now decrypt correctly and all shared config (Neovim, sops,
+home-manager) will be active.
 
 ## Adding a new user
 

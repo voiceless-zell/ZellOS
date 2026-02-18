@@ -1,11 +1,11 @@
-{ config, ... }:
+{ config, inputs, ... }:
 
 # ── sops-nix — home-manager user secret deployment ───────────────────────────
 #
 # The SSH private key is decrypted at the system level (nixos/modules/sops.nix)
 # and lands at /run/secrets/ssh/github.  Here we just point the home-manager
 # sops module at the same age key so it can manage additional user-scoped
-# secrets in the future (e.g. the Gemini API key for Avante).
+# secrets (e.g. the Gemini API key for Avante).
 #
 # The GitHub SSH key is wired into ~/.ssh/config via programs.ssh so that SSH
 # picks it up automatically — no manual symlinking needed.
@@ -15,12 +15,13 @@
   sops = {
     age.keyFile = "/etc/sops/age/keys.txt";
 
+    # Anchor the secrets file to the flake root so the path is always correct
+    # regardless of where this module is imported from.
+    defaultSopsFile = "${inputs.self}/secrets/shared.yaml";
+
     # ── Gemini API key for Avante ───────────────────────────────────────────
-    # Stored in secrets/shared.yaml under the key "gemini/api_key".
-    # Decrypted to /run/user/secrets/gemini/api_key at login time.
-    secrets."gemini/api_key" = {
-      sopsFile = ../../secrets/shared.yaml;
-    };
+    # Decrypted to /run/user/<uid>/secrets/gemini/api_key at login time.
+    secrets."gemini/api_key" = {};
   };
 
   # ── GitHub SSH key ──────────────────────────────────────────────────────────

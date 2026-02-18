@@ -1,6 +1,5 @@
 {
   inputs,
-  config,
   ...
 }: {
   imports = [
@@ -81,8 +80,8 @@
 
       theme = {
         enable = true;
-        name = "dracula";
-        style = "dark";
+        name = "tokyonight";
+        style = "moon";  # options: night, storm, moon, day
         transparent = true;
       };
 
@@ -131,7 +130,7 @@
       statusline = {
         lualine = {
           enable = true;
-          theme = "dracula";
+          theme = "tokyonight";
         };
       };
 
@@ -166,7 +165,7 @@
 
       notify = {
         nvim-notify.enable = true;
-        #   nvim-notify.setupOpts.background_colour = "#${config.lib.stylix.colors.base01}";
+        nvim-notify.setupOpts.background_colour = "#222436"; # tokyonight moon bg
       };
 
       utility = {
