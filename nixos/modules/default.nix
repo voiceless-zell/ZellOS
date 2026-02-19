@@ -8,4 +8,6 @@
     # e.g. ./fonts.nix
     #      ./locale.nix
   ];
+
+  nixpkgs.config.allowUnfree = true;
 }
