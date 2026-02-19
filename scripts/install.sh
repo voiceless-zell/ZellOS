@@ -124,6 +124,15 @@ ask "Swap size in GB [default: 8]:"
 read -r SWAP_SIZE
 SWAP_SIZE="${SWAP_SIZE:-8}"
 
+# ── User password ─────────────────────────────────────────────────────────────
+ask "Password for user '$USERNAME':"
+read -rs USER_PASSWORD
+echo ""
+ask "Confirm password:"
+read -rs USER_PASSWORD_CONFIRM
+echo ""
+[[ "$USER_PASSWORD" != "$USER_PASSWORD_CONFIRM" ]] && error "Passwords do not match."
+
 # ── Confirmation ──────────────────────────────────────────────────────────────
 echo ""
 header "Configuration Summary"
@@ -134,6 +143,7 @@ echo -e "  Form factor : ${BOLD}$FORM_FACTOR${NC}"
 echo -e "  GPU         : ${BOLD}$GPU${NC}"
 echo -e "  Disk        : ${BOLD}$DISK${NC}"
 echo -e "  Swap        : ${BOLD}${SWAP_SIZE}GB${NC}"
+echo -e "  Password    : ${BOLD}[set]${NC}"
 echo ""
 warn "ALL DATA ON $DISK WILL BE DESTROYED."
 ask "Continue? [y/N]:"
@@ -518,6 +528,12 @@ cp -r "$FLAKE_ROOT/." "$NIXOS_DIR/"
 # Point flake.nix at the new host
 info "Running nixos-install..."
 nixos-install --flake "$NIXOS_DIR#$HOSTNAME" --no-root-passwd
+
+info "Setting password for $USERNAME..."
+nixos-enter --root /mnt -- passwd "$USERNAME" <<EOF
+$USER_PASSWORD
+$USER_PASSWORD_CONFIRM
+EOF
 
 # =============================================================================
 # Done

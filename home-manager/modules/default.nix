@@ -2,10 +2,10 @@
 
 {
   imports = [
-    ./sops.nix  # sops-nix user secret deployment
+    # sops.nix is loaded via flake sharedModules — do not import here
+    ./zsh.nix      # zsh with oh-my-zsh
+    ./starship.nix # cross-shell prompt
     # Add shared home-manager modules here as you create them
-    # e.g. ./neovim.nix
-    #      ./tmux.nix
-    #      ./starship.nix
+    # e.g. ./tmux.nix
   ];
 }
