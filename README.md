@@ -164,7 +164,7 @@ git commit -m "feat: add host <hostname>"
 Pull the updated flake and rebuild:
 
 ```bash
-cd /etc/nixos
+cd ~/ZellOS
 git pull
 sudo nixos-rebuild switch --flake .#<hostname>
 ```
@@ -183,7 +183,7 @@ home-manager) will be active.
 ## Applying the config (WSL)
 
 ```bash
-sudo nixos-rebuild switch --flake /path/to/flake#wsl
+sudo nixos-rebuild switch --flake ~/ZellOS#wsl
 ```
 
 ## Updating inputs

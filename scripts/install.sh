@@ -519,13 +519,15 @@ fi
 # =============================================================================
 header "Installing NixOS"
 
-NIXOS_DIR="/mnt/etc/nixos"
+NIXOS_DIR="/mnt/home/$USERNAME/ZellOS"
 mkdir -p "$NIXOS_DIR"
 
 info "Copying flake to $NIXOS_DIR ..."
 cp -r "$FLAKE_ROOT/." "$NIXOS_DIR/"
 
-# Point flake.nix at the new host
+# Ensure correct ownership — nixos-install runs as root
+chown -R 1000:100 "/mnt/home/$USERNAME"
+
 info "Running nixos-install..."
 nixos-install --flake "$NIXOS_DIR#$HOSTNAME" --no-root-passwd
 
@@ -543,7 +545,7 @@ header "Installation Complete"
 success "NixOS installed successfully as '$HOSTNAME'."
 
 # ── Write post-reboot instructions to /mnt so they appear on first login ──────
-MOTD_FILE="/mnt/etc/nixos/POST_INSTALL.md"
+MOTD_FILE="/mnt/home/$USERNAME/ZellOS/POST_INSTALL.md"
 cat > "$MOTD_FILE" <<MOTDEOF
 ════════════════════════════════════════════════════════════
   ZellOS — Post-Install Steps for '$HOSTNAME'
@@ -577,12 +579,12 @@ Step 4 — On your dev machine, add the key to .sops.yaml then re-encrypt:
 
 Step 5 — Back on this machine, pull and rebuild to apply sops:
 
-    cd /etc/nixos
+    cd ~/ZellOS
     git pull
     sudo nixos-rebuild switch --flake .#$HOSTNAME
 
 ════════════════════════════════════════════════════════════
-  Run: cat /etc/nixos/POST_INSTALL.md to see this again
+  Run: cat ~/ZellOS/POST_INSTALL.md to see this again
 ════════════════════════════════════════════════════════════
 MOTDEOF
 
