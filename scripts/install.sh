@@ -370,7 +370,8 @@ $WIFI_CONFIG
     isNormalUser = true;
     description = "$USERNAME";
     extraGroups = [ "wheel" "networkmanager" $( [[ -n "$EXTRA_GROUPS" ]] && echo "\"$EXTRA_GROUPS\"" ) ];
-    shell = pkgs.bash;
+    shell = pkgs.zsh;
+    ignoreShellProgramCheck = true;
   };
 
   security.sudo.extraRules = [
@@ -524,23 +525,54 @@ nixos-install --flake "$NIXOS_DIR#$HOSTNAME" --no-root-passwd
 header "Installation Complete"
 
 success "NixOS installed successfully as '$HOSTNAME'."
-echo ""
-echo -e "  ${BOLD}Next steps after rebooting:${NC}"
-echo ""
-echo -e "  1. Generate the host age key for sops:"
-echo -e "     ${CYAN}sudo mkdir -p /etc/sops/age${NC}"
-echo -e "     ${CYAN}nix-shell -p ssh-to-age --run \\${NC}"
-echo -e "     ${CYAN}  \"ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \\${NC}"
-echo -e "     ${CYAN}  | sudo tee /etc/sops/age/keys.txt > /dev/null\"${NC}"
-echo -e "     ${CYAN}sudo chmod 644 /etc/sops/age/keys.txt${NC}"
-echo ""
-echo -e "  2. Get the host public age key and add it to .sops.yaml:"
-echo -e "     ${CYAN}nix-shell -p ssh-to-age --run \\${NC}"
-echo -e "     ${CYAN}  \"ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub\"${NC}"
-echo ""
-echo -e "  3. Re-encrypt secrets for the new host (from your dev machine):"
-echo -e "     ${CYAN}sops updatekeys secrets/shared.yaml${NC}"
-echo ""
-echo -e "  4. Rebuild to apply sops:"
-echo -e "     ${CYAN}sudo nixos-rebuild switch --flake /etc/nixos#$HOSTNAME${NC}"
-echo ""
+
+# ── Write post-reboot instructions to /mnt so they appear on first login ──────
+MOTD_FILE="/mnt/etc/nixos/POST_INSTALL.md"
+cat > "$MOTD_FILE" <<MOTDEOF
+════════════════════════════════════════════════════════════
+  ZellOS — Post-Install Steps for '$HOSTNAME'
+════════════════════════════════════════════════════════════
+
+$(  [[ "$FORM_FACTOR" == "laptop" ]] && cat <<'LAPTOPEOF'
+Step 1 — Connect to wifi:
+
+    sudo nmtui
+
+LAPTOPEOF
+)
+Step 2 — Generate the host age key for sops:
+
+    sudo mkdir -p /etc/sops/age
+    nix-shell -p ssh-to-age --run \
+      "ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \
+      | sudo tee /etc/sops/age/keys.txt > /dev/null"
+    sudo chmod 644 /etc/sops/age/keys.txt
+
+Step 3 — Get the host public age key (send this to your dev machine):
+
+    nix-shell -p ssh-to-age --run \
+      "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
+
+Step 4 — On your dev machine, add the key to .sops.yaml then re-encrypt:
+
+    sops updatekeys secrets/shared.yaml
+    git add .sops.yaml secrets/shared.yaml
+    git commit -m "feat: add host $HOSTNAME"
+
+Step 5 — Back on this machine, pull and rebuild to apply sops:
+
+    cd /etc/nixos
+    git pull
+    sudo nixos-rebuild switch --flake .#$HOSTNAME
+
+════════════════════════════════════════════════════════════
+  Run: cat /etc/nixos/POST_INSTALL.md to see this again
+════════════════════════════════════════════════════════════
+MOTDEOF
+
+# Display the instructions before rebooting
+cat "$MOTD_FILE"
+
+info "Rebooting in 10 seconds — press Ctrl+C to cancel..."
+sleep 10
+reboot

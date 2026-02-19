@@ -46,7 +46,8 @@
     isNormalUser = true;
     description = "Zell";
     extraGroups = [ "wheel" ];
-    shell = pkgs.bash; # change to pkgs.zsh, pkgs.fish, etc. as desired
+    shell = pkgs.zsh;
+    ignoreShellProgramCheck = true;
   };
 
   # Allow zell to use sudo without password (common WSL convenience)
@@ -68,5 +69,6 @@
     curl
     wget
     vim
+    zsh
   ];
 }
