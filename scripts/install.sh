@@ -28,7 +28,7 @@ ask()     { echo -e "${BOLD}${YELLOW}  ?   ${NC}$*"; }
 [[ $EUID -ne 0 ]] && error "This script must be run as root."
 
 # ── Clone or locate repo ──────────────────────────────────────────────────────
-REPO_URL="https://github.com/voicless-zell/ZellOS"
+REPO_URL="https://github.com/voiceless-zell/ZellOS"
 REPO_DIR="/tmp/ZellOS"
 
 if [[ -d "$REPO_DIR/.git" ]]; then

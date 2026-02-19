@@ -75,7 +75,7 @@ hardware detection, host config generation, flake registration, and installation
 From the live ISO terminal, paste this single command as root:
 
 ```bash
-nix-shell -p curl git --run "bash <(curl -L https://raw.githubusercontent.com/voicless-zell/ZellOS/main/scripts/install.sh)"
+nix-shell -p curl git --run "bash <(curl -L https://raw.githubusercontent.com/voiceless-zell/ZellOS/main/scripts/install.sh)"
 ```
 
 This pulls and runs the script directly — no manual cloning needed. The script
