@@ -28,7 +28,7 @@ ask()     { echo -e "${BOLD}${YELLOW}  ?   ${NC}$*"; }
 [[ $EUID -ne 0 ]] && error "This script must be run as root."
 
 # ── Clone or locate repo ──────────────────────────────────────────────────────
-REPO_URL="https://github.com/voiceless-zell/ZellOS"
+REPO_URL="https://github.com/voicless-zell/ZellOS"
 REPO_DIR="/tmp/ZellOS"
 
 if [[ -d "$REPO_DIR/.git" ]]; then
@@ -416,6 +416,9 @@ awk -v kmod="$CPU_KMOD" '{ gsub(/__CPU_KMOD__/, kmod); print }' \
 
 success "Host config created at nixos/hosts/$HOSTNAME/"
 
+# Stage new files so nix flake can see them
+git -C "$FLAKE_ROOT" add nixos/hosts/"$HOSTNAME"
+
 # =============================================================================
 # STEP 6 — Create home-manager user profile if new user
 # =============================================================================
@@ -478,6 +481,7 @@ if [[ "$HM_USER" != "zell" ]]; then
 NIXEOF
 
   success "Home manager profile created at home-manager/users/$HM_USER/"
+  git -C "$FLAKE_ROOT" add home-manager/users/"$HM_USER"
 fi
 
 # =============================================================================
@@ -506,6 +510,7 @@ else
   ' "$FLAKE_FILE" > "${FLAKE_FILE}.tmp" && mv "${FLAKE_FILE}.tmp" "$FLAKE_FILE"
 
   success "Added '$HOSTNAME' to flake.nix."
+  git -C "$FLAKE_ROOT" add flake.nix
 fi
 
 # =============================================================================
