@@ -20,7 +20,6 @@
     packages = with pkgs.nerd-fonts; [
       jetbrains-mono  # primary coding font with full nerd font symbols
       fira-code       # alternative with ligatures
-      noto-sans       # fallback for broad unicode coverage
     ];
     fontconfig = {
       enable = true;
