@@ -235,21 +235,15 @@ esac
 case "$GPU" in
   amd)
     GPU_CONFIG=$(cat <<'NIXEOF'
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
+  hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "amdgpu" ];
 NIXEOF
 )
     ;;
   intel)
     GPU_CONFIG=$(cat <<'NIXEOF'
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
     extraPackages = with pkgs; [ intel-media-driver intel-ocl ];
   };
 NIXEOF
@@ -257,16 +251,12 @@ NIXEOF
     ;;
   nvidia)
     GPU_CONFIG=$(cat <<'NIXEOF'
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
+  hardware.graphics.enable = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = false;
-    open = false;          # use proprietary kernel module
+    open = false;
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
   };
