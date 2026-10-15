@@ -38,7 +38,7 @@
 
   # ── Zsh host env var ───────────────────────────────────────────────────────
   # Sets NIX_HOST so zsh and starship can show the current host if desired.
-  programs.zsh.initExtra = ''
+  programs.zsh.initContent = ''
     export NIX_HOST="${hostname}"
   '';
 
