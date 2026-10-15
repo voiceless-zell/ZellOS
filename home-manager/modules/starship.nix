@@ -40,9 +40,9 @@
       git_commit.tag_disabled = false;
 
       git_status = {
-        ahead    = "⇡${count}";
-        behind   = "⇣${count}";
-        diverged = "⇕⇡${ahead_count}⇣${behind_count}";
+        ahead    = "⇡\${count}";
+        behind   = "⇣\${count}";
+        diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
         staged   = "+$count";
       };
 
