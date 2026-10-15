@@ -12,9 +12,7 @@
   };
 
   # ── SSH ────────────────────────────────────────────────────────────────────
-  # Enabled primarily to generate and persist /etc/ssh/ssh_host_ed25519_key,
-  # which sops-nix derives the host age key from. Password auth is off;
-  # root login is off. WSL does not expose this port to the network by default.
+  # SSH server for remote administration and development.
   services.openssh = {
     enable = true;
     settings = {
