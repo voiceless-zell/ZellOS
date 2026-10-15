@@ -2,10 +2,6 @@
   inputs,
   ...
 }: {
-  imports = [
-    ./avante.nix
-  ];
-
   programs.nvf = {
     enable = true;
 
