@@ -7,23 +7,18 @@ Multi-host NixOS configuration with WSL and Home Manager support.
 ```
 .
 ├── flake.nix                        # Inputs, outputs, host registration
-├── .sops.yaml                       # sops key policy (age keys + creation rules)
 ├── scripts/
 │   └── install.sh                   # Interactive installer for new machines
-├── secrets/
-│   ├── README.md                    # How to create/edit secrets
-│   └── shared.yaml                  # Encrypted secrets (safe to commit)
 ├── nixos/
 │   ├── hosts/
 │   │   ├── wsl/
 │   │   │   ├── default.nix          # WSL NixOS config (hostname: "wsl")
-│   │   │   └── hardware.nix         # WSL boot/hardware stubs
+│   │   │   └── hardware.nix         # WSL boot/hardware configuration
 │   │   └── template/
 │   │       ├── default.nix          # Template for new hosts (filled by install.sh)
 │   │       └── hardware.nix         # Hardware template with disk labels
 │   └── modules/
 │       ├── default.nix              # Shared NixOS modules
-│       ├── sops.nix                 # System-level secret decryption
 │       └── nvim/                    # NVF Neovim config
 └── home-manager/
     ├── users/
@@ -31,32 +26,8 @@ Multi-host NixOS configuration with WSL and Home Manager support.
     │       └── default.nix          # Home Manager config for zell
     └── modules/
         ├── default.nix              # Shared Home Manager modules
-        └── sops.nix                 # User-level secret deployment (~/.ssh, env vars)
-```
-
-## First-time secrets setup
-
-See `secrets/README.md` for full detail. Quick summary:
-
-```bash
-# 1. Derive your personal age key from your user SSH key and store it
-mkdir -p ~/.config/sops/age
-nix-shell -p ssh-to-age --run \
-  "ssh-to-age < ~/.ssh/id_ed25519.pub"
-# → paste the output into .sops.yaml as &user_zell
-
-# 2. On each deployed machine, derive the host age key from the SSH host key
-sudo mkdir -p /etc/sops/age
-nix-shell -p ssh-to-age --run \
-  "ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \
-  | sudo tee /etc/sops/age/keys.txt > /dev/null"
-sudo chmod 644 /etc/sops/age/keys.txt
-# Get the public key for .sops.yaml:
-nix-shell -p ssh-to-age --run "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
-# → paste into .sops.yaml as &host_wsl (or &host_<n>)
-
-# 3. Create the encrypted secrets file (once .sops.yaml has your personal key)
-sops secrets/shared.yaml
+        ├── zsh.nix                  # Zsh configuration
+        └── starship.nix              # Cross-shell prompt
 ```
 
 ## Adding to a New Machine
@@ -112,65 +83,16 @@ sudo nmtui
 Select **Activate a connection**, choose your network, enter the password, and
 you're online. Then proceed with the steps below.
 
-### Step 3 — First boot: generate the host age key
+### Step 3 — Rebuild the new machine
 
-After rebooting into the new system, set up the sops decryption key:
-
-```bash
-sudo mkdir -p /etc/sops/age
-nix-shell -p ssh-to-age --run \
-  "ssh-to-age -private-key -i /etc/ssh/ssh_host_ed25519_key \
-  | sudo tee /etc/sops/age/keys.txt > /dev/null"
-sudo chmod 644 /etc/sops/age/keys.txt
-```
-
-Get the host's public age key to add to `.sops.yaml`:
-
-```bash
-nix-shell -p ssh-to-age --run \
-  "ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub"
-```
-
-### Step 4 — Add the host key to .sops.yaml (from your dev machine)
-
-In `.sops.yaml`, add the new host key under `keys` and include it in the
-`creation_rules` group:
-
-```yaml
-keys:
-  - &user_zell age1...
-  - &host_wsl  age1...
-  - &host_<hostname> age1...   # ← add this
-
-creation_rules:
-  - path_regex: secrets/shared\.yaml$
-    key_groups:
-      - age:
-          - *user_zell
-          - *host_wsl
-          - *host_<hostname>   # ← and this
-```
-
-Then re-encrypt the secrets file so the new host can decrypt it:
-
-```bash
-sops updatekeys secrets/shared.yaml
-git add .sops.yaml secrets/shared.yaml
-git commit -m "feat: add host <hostname>"
-```
-
-### Step 5 — Rebuild on the new machine
-
-Pull the updated flake and rebuild:
+After the first boot, pull the configuration and rebuild using the registered
+host name:
 
 ```bash
 cd ~/ZellOS
 git pull
 sudo nixos-rebuild switch --flake .#<hostname>
 ```
-
-Your secrets will now decrypt correctly and all shared config (Neovim, sops,
-home-manager) will be active.
 
 ## Adding a new user
 
