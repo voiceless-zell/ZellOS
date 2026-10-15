@@ -18,14 +18,9 @@
       url = "github:notashelf/nvf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, nixos-wsl, home-manager, nvf, sops-nix, ... }@inputs:
+  outputs = { self, nixpkgs, nixos-wsl, home-manager, nvf, ... }@inputs:
     let
       # Helper to build a NixOS system config for a given host
       mkHost = hostname: system: extraModules:
@@ -36,15 +31,11 @@
             ./nixos/hosts/${hostname}
             ./nixos/modules
             nvf.nixosModules.default          # system-wide nvf — available to all users/root
-            sops-nix.nixosModules.sops        # system-level secret decryption
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = { inherit inputs hostname; };
-              home-manager.sharedModules = [
-                sops-nix.homeManagerModules.sops  # user-level secret deployment
-              ];
             }
           ] ++ extraModules;
         };
