@@ -5,6 +5,10 @@
   programs.starship = {
     enable = true;
     settings = {
+      # WSL can be slow to scan Windows-mounted directories such as /mnt/c.
+      # Starship's default scan timeout is very short; allow up to 1 second.
+      scan_timeout = 1000;
+
       add_newline = false;
 
       character = {
@@ -36,9 +40,9 @@
       git_commit.tag_disabled = false;
 
       git_status = {
-        ahead    = "⇡\${count}";
-        behind   = "⇣\${count}";
-        diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
+        ahead    = "⇡${count}";
+        behind   = "⇣${count}";
+        diverged = "⇕⇡${ahead_count}⇣${behind_count}";
         staged   = "+$count";
       };
 
