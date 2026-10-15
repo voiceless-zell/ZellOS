@@ -81,7 +81,7 @@
       theme = {
         enable = true;
         name = "tokyonight";
-        style = "moon";  # options: night, storm, moon, day
+        style = "moon"; # options: night, storm, moon, day
         transparent = true;
       };
 
@@ -92,6 +92,7 @@
       };
 
       lsp = {
+        enable = true;
         formatOnSave = true;
         lspkind.enable = false;
         lightbulb.enable = true;
@@ -103,7 +104,6 @@
       };
 
       languages = {
-        enableLSP = true;
         enableFormat = true;
         enableTreesitter = true;
         enableExtraDiagnostics = true;
