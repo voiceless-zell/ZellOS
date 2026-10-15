@@ -13,7 +13,7 @@
       plugins = [];
     };
 
-    initExtra = ''
+    initContent = ''
       # ── Post-install instructions (shows once then deletes itself) ──────────
       if [ -f "$HOME/ZellOS/POST_INSTALL.md" ]; then
         cat "$HOME/ZellOS/POST_INSTALL.md"
